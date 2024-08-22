@@ -35,6 +35,16 @@ def regist_call():
     # POSTリクエストから送信されたデータを格納
     received_data = request.json
 
+    #APIエンドポイントとリクエストAPIの不一致
+    if received_data["api"] != "Registration":
+        return_data = {
+            "api": "RegistrationResult",
+            "result": 3,
+            "request_id": received_data["request_id"],
+            "timestamp": datetime.now()
+        }
+        return jsonify(return_data)
+
     # DBからデータを取得
     conn = connect_db()
     c = conn.cursor()
@@ -75,6 +85,16 @@ def regist_call():
 def release_call():
     # POSTリクエストから送信されたデータを格納(api, bldg-id, robot_id, resource_id, request_id, timestamp_id)
     received_data = request.json
+
+    if received_data["api"] != "Release":
+        return_data = {
+            "api": "RegistrationResult",
+            "result": 3,
+            "resource_id" : received_data["resource_id"],
+            "request_id": received_data["request_id"],
+            "timestamp": datetime.now()
+        }
+        return jsonify(return_data)    
 
     # DBからデータを取得
     conn = connect_db()
