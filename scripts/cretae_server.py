@@ -30,7 +30,7 @@ def get_data():
     return jsonify(data)
 
 # リソース登録エンドポイント
-@app.route('/api/regist', methods=['POST'])
+@app.route('/api/registration', methods=['POST'])
 def regist_call():
     # POSTリクエストから送信されたデータを格納
     received_data = request.json
@@ -88,7 +88,7 @@ def release_call():
 
     if received_data["api"] != "Release":
         return_data = {
-            "api": "RegistrationResult",
+            "api": "ReleaseResult",
             "result": 3,
             "resource_id" : received_data["resource_id"],
             "request_id": received_data["request_id"],
