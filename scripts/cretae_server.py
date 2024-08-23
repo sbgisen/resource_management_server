@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import sqlite3
 from datetime import datetime
-import json
+
 
 app = Flask(__name__)
 
@@ -30,8 +30,8 @@ def get_data():
     return jsonify(data)
 
 # リソース登録エンドポイント
-@app.route('/api/registration', methods=['POST'])
-def regist_call():
+@app.route('/api/Registration', methods=['POST'])
+def registration_call():
     # POSTリクエストから送信されたデータを格納
     received_data = request.json
 
@@ -81,7 +81,7 @@ def regist_call():
     return jsonify(return_data)
 
 #登録解除エンドポイント
-@app.route('/api/release', methods=['POST'])
+@app.route('/api/Release', methods=['POST'])
 def release_call():
     # POSTリクエストから送信されたデータを格納(api, bldg-id, robot_id, resource_id, request_id, timestamp_id)
     received_data = request.json
@@ -130,7 +130,6 @@ def release_call():
             "timestamp": datetime.now()
         }        
        
-
     conn.close()
     return jsonify(return_data)
 
