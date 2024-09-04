@@ -57,7 +57,6 @@ def initialize() -> None:
         '''
         c.execute(update_query)
         conn.commit()
-        conn.close()
         print("All robot_id values have been set to an empty string.")
 
 
