@@ -18,10 +18,10 @@
 
 import sqlite3
 
-from constants import RESOURCE_DB_PATH
+from resource_management_server.config import Config
 
 # データベースファイルを作成または接続
-conn = sqlite3.connect(RESOURCE_DB_PATH)
+conn = sqlite3.connect(Config.RESOURCE_DB_PATH)
 
 # カーソルオブジェクトを作成
 c = conn.cursor()

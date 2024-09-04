@@ -21,6 +21,7 @@ import os
 
 class Config:
     """Configuration for the resource management server database."""
-    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+    BASE_DIR = os.path.expanduser('~/.resource_management_server')
+    os.makedirs(BASE_DIR, exist_ok=True)
     RESOURCE_DB_NAME = 'resource_database.db'
-    RESOURCE_DB_PATH = os.path.join(BASE_DIR, 'instance', RESOURCE_DB_NAME)
+    RESOURCE_DB_PATH = os.path.join(BASE_DIR, RESOURCE_DB_NAME)
