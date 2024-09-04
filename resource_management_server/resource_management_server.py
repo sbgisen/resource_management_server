@@ -37,13 +37,13 @@ def connect_db() -> sqlite3.Connection:
     return sqlite3.connect(Config.RESOURCE_DB_PATH)
 
 
-def current_timestamp() -> str:
+def current_timestamp() -> int:
     """Get the current timestamp.
 
     Returns:
-        str: The current timestamp in the specified format.
+        int: The current timestamp in the specified format.
     """
-    return time.time() * 1000
+    return int(time.time() * 1000)
 
 
 @app.before_first_request
