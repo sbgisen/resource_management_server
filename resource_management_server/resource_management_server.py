@@ -46,30 +46,19 @@ def current_timestamp() -> str:
     return time.time() * 1000
 
 
-"""
 @app.before_first_request
-def initialize():
-    # データベースに接続
-    conn = connect_db()
-    c = conn.cursor()
-
-    # robot_idの値をすべて空文字列にするクエリ
-    update_query = '''
-    UPDATE resource_operator
-    SET robot_id = '';
-    '''
-
-    # クエリを実行
-    c.execute(update_query)
-
-    # 変更をコミット
-    conn.commit()
-
-    # 接続を閉じる
-    conn.close()
-
-    print("All robot_id values have been set to an empty string.")
-"""
+def initialize() -> None:
+    """Reset occupation status of all resources."""
+    with connect_db() as conn:
+        c = conn.cursor()
+        update_query = '''
+        UPDATE resource_operator
+        SET robot_id = '';
+        '''
+        c.execute(update_query)
+        conn.commit()
+        conn.close()
+        print("All robot_id values have been set to an empty string.")
 
 
 @app.route('/api/all_data', methods=['GET'])
