@@ -1,0 +1,11 @@
+---
+- resource_id: 27F_R01
+  resource_type: 1
+  bldg_id: Takeshiba
+  max_timeout: 90
+  default_timeout: 90
+- resource_id: 27F_R02
+  resource_type: 1
+  bldg_id: Takeshiba
+  max_timeout: 180
+  default_timeout: 180
