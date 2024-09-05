@@ -21,6 +21,7 @@ import sqlite3
 import time
 
 from flask import Flask
+from flask import Response
 from flask import jsonify
 from flask import request
 from pydantic import ValidationError
@@ -68,11 +69,13 @@ def initialize() -> None:
 
 
 @app.route('/api/all_data', methods=['GET'])
-def get_all_data() -> dict:
-    """Get all data from the resource_operator table (for debug purposes).
+def get_all_data() -> Response:
+    """Get all data from the resource_operator table.
+
+    THIS API IS FOR DEBUG PURPOSES ONLY.
 
     Returns:
-        dict: A dictionary containing the data from the resource_operator table.
+        Response: JSON response containing the data from the resource_operator table.
     """
     try:
         with connect_db() as conn:
@@ -86,11 +89,11 @@ def get_all_data() -> dict:
 
 
 @app.route('/api/registration', methods=['POST'])
-def registration_call() -> dict:
+def registration_call() -> Response:
     """Register a robot to a resource.
 
     Returns:
-        dict: A dictionary containing the result of the registration request.
+        Response: JSON response containing the result of the registration request.
     """
     try:
         request_data = RegistrationPayload(**request.json)
@@ -128,11 +131,11 @@ def registration_call() -> dict:
 
 
 @app.route('/api/release', methods=['POST'])
-def release_call() -> dict:
+def release_call() -> Response:
     """Release a robot from a resource.
 
     Returns:
-        dict: A dictionary containing the result of the release request.
+        Response: JSON response containing the result of the release request.
     """
     try:
         received_data = ReleasePayload(**request.json)
