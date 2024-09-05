@@ -81,7 +81,7 @@ def insert_resources(c: sqlite3.Cursor, resources: list[ResourceData]) -> None:
         c.execute(
             '''
             INSERT INTO resource_operator\
-                  (bldg_id, resource_id, resource_type, max_timeout, default_timeout, locked_by)
+                (bldg_id, resource_id, resource_type, max_timeout, default_timeout, locked_by)
             VALUES (?, ?, ?, ?, ?, '')
             ON CONFLICT(resource_id) DO NOTHING
             ''', (

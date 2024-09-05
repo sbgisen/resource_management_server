@@ -48,7 +48,9 @@ def connect_db() -> sqlite3.Connection:
     Returns:
         sqlite3.Connection: Connection object to the SQLite database.
     """
-    return sqlite3.connect(Config.RESOURCE_DB_PATH)
+    conn = sqlite3.connect(Config.RESOURCE_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 def current_timestamp() -> int:
@@ -88,9 +90,10 @@ def get_all_data() -> Response:
             c = conn.cursor()
             c.execute('SELECT * FROM resource_operator')
             rows = c.fetchall()
-    except sqlite3.Error as e:
-        return jsonify({"error": str(e)}), 500
-    data = [{"bldg_id": row[1], "resource_id": row[2], "locked_by": row[6]} for row in rows]
+    except sqlite3.Error as err:
+        return jsonify({'error': str(err)}), 500
+    data = [
+        {'bldg_id': row['bldg_id'], 'resource_id': row['resource_id'], 'locked_by': row['locked_by']} for row in rows]
     return jsonify(data)
 
 
@@ -125,7 +128,7 @@ def registration_call() -> Response:
                 'SELECT * FROM resource_operator WHERE bldg_id = ? AND resource_id = ?',
                 (request_data.bldg_id, request_data.resource_id))
             row = c.fetchone()
-            if not row or row[6]:
+            if not row or row['locked_by']:
                 return_data.result = ResultId.FAILURE
             else:
                 c.execute(
@@ -167,7 +170,7 @@ def release_call() -> Response:
                 'SELECT * FROM resource_operator WHERE bldg_id = ? AND resource_id = ?',
                 (received_data.bldg_id, received_data.resource_id))
             row = c.fetchone()
-            if row and received_data.robot_id == row[6]:
+            if row and received_data.robot_id == row['locked_by']:
                 # Update the resource to release the robot
                 c.execute('''
                     UPDATE resource_operator
@@ -219,8 +222,8 @@ def request_resource_status() -> Response:
                 (received_data.bldg_id, received_data.resource_id))
             row = c.fetchone()
             if row:
-                return_data.resource_state = ResourceState.OCCUPIED if row[6] else ResourceState.AVAILABLE
-                return_data.robot_id = row[6]  # Should be empty string when unoccupied.
+                return_data.resource_state = ResourceState.OCCUPIED if row['locked_by'] else ResourceState.AVAILABLE
+                return_data.robot_id = row['locked_by']  # Should be empty string when unoccupied.
             else:
                 return_data.result = ResultId.FAILURE
     except sqlite3.Error as err:
@@ -265,7 +268,7 @@ def robot_status() -> Response:
                         UPDATE resource_operator
                         SET locked_by = ?
                         WHERE bldg_id = ? AND resource_id = ?
-                    ''', ("", row[1], row[2]))
+                    ''', ('', row['bldg_id'], row['resource_id']))
                     conn.commit()
                 else:
                     return_data.result = ResultId.FAILURE
