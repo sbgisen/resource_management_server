@@ -17,38 +17,99 @@
 """Script used for initializing the resource management database and create a table."""
 
 import sqlite3
+import sys
+
+import yaml
+from pydantic import ValidationError
 
 from resource_management_server.config import Config
+from resource_management_server.model import ResourceData
 
-# データベースファイルを作成または接続
-conn = sqlite3.connect(Config.RESOURCE_DB_PATH)
 
-# カーソルオブジェクトを作成
-c = conn.cursor()
+def create_table(c: sqlite3.Cursor) -> None:
+    """Create DB table.
 
-# 既存のテーブルを削除する
-c.execute('DROP TABLE IF EXISTS resource_operator')
+    Args:
+        c: Cursor object for the database connection.
+    """
+    c.execute('DROP TABLE IF EXISTS resource_operator')
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS resource_operator (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        bldg_id TEXT NOT NULL,
+        resource_id TEXT NOT NULL UNIQUE,
+        robot_id TEXT NOT NULL,
+        resource_type INTEGER,
+        max_timeout INTEGER,
+        default_timeout INTEGER,
+        locked_time INTEGER,
+        UNIQUE(resource_id) ON CONFLICT IGNORE
+    )
+    ''')
 
-# テーブルを作成
-c.execute('''
-CREATE TABLE IF NOT EXISTS resource_operator (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    building_id TEXT NOT NULL,
-    resource_id TEXT NOT NULL,
-    robot_id TEXT NOT NULL
-)
-''')
 
-# データの挿入
-c.execute('''
-INSERT INTO resource_operator (building_id, resource_id, robot_id)
-VALUES ('Takeshiba', 'Resource01', '')
-''')
+def load_resources_from_yaml(yaml_path: str) -> list[ResourceData]:
+    """Read resource info from given yaml file.
 
-# コミットして変更を保存
-conn.commit()
+    Args:
+        yaml_path (str): Path to the yaml file.
 
-# 接続を閉じる
-conn.close()
+    Returns:
+        list[ResourceData]: List of resource info.
+    """
+    with open(yaml_path, 'r') as file:
+        resources = yaml.safe_load(file)
+    validated_resources = []
+    for resource in resources:
+        try:
+            validated_resource = ResourceData(**resource)
+            validated_resources.append(validated_resource)
+        except ValidationError as err:
+            print(f"Validation error for resource {resource.get('resource_id', 'unknown')}: {err}")
+            return []
+    return validated_resources
 
-print("Database and table created successfully.")
+
+def insert_resources(c: sqlite3.Cursor, resources: list[ResourceData]) -> None:
+    """Insert given resource info to the database.
+
+    Args:
+        c (sqlite3.Cursor): Cursor object for the database connection.
+        resources (list[ResourceData]): List of resource info.
+    """
+    for resource in resources:
+        c.execute(
+            '''
+            INSERT INTO resource_operator (bldg_id, resource_id, robot_id, resource_type, max_timeout, default_timeout)
+            VALUES (?, ?, '', ?, ?, ?)
+            ON CONFLICT(resource_id) DO NOTHING
+            ''', (
+                resource.bldg_id, resource.resource_id, resource.resource_type.value,
+                resource.max_timeout, resource.default_timeout))
+
+
+def main(yaml_path: str) -> None:
+    """Main function to initialize the database and create a table.
+
+    Args:
+        yaml_path (str): Path to the yaml file.
+    """
+    conn = sqlite3.connect(Config.RESOURCE_DB_PATH)
+    c = conn.cursor()
+    create_table(c)
+    resources = load_resources_from_yaml(yaml_path)
+    if not resources:
+        print('Failed to load resources from YAML.')
+        conn.close()
+        sys.exit(1)
+    insert_resources(c, resources)
+    conn.commit()
+    conn.close()
+    print('Database and table created successfully with data from YAML.')
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print("Usage: python initialize_db.py <path_to_resource_config_yaml>")
+        sys.exit(1)
+    main(sys.argv[1])
