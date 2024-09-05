@@ -23,6 +23,28 @@ from pydantic import BaseModel
 from pydantic import validator
 
 
+class ResourceType(IntEnum):
+    """Type of resource, currently only one type is defined."""
+    ALLOW_ONE = 1
+
+
+class ResourceData(BaseModel):
+    """Data model for the resource data."""
+    bldg_id: str
+    resource_id: str
+    resource_type: ResourceType
+    max_timeout: int
+    default_timeout: int
+    robot_id: str = ""  # TODO: Change this to locked_by
+    locked_time: int = 0
+
+    @validator('max_timeout', 'default_timeout')
+    def validate_timeouts(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError('Timeout values must be positive.')
+        return value
+
+
 class ResultId(IntEnum):
     """IntEnum class for the result field in the response data."""
     SUCCESS = 1
