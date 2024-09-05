@@ -61,7 +61,7 @@ def initialize() -> None:
 
 
 @app.route('/api/all_data', methods=['GET'])
-def get_data() -> dict:
+def get_all_data() -> dict:
     """Get all data from the resource_operator table (for debug purposes).
 
     Returns:
