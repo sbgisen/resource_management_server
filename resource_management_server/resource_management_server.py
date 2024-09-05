@@ -20,10 +20,17 @@
 import sqlite3
 import time
 
-from config import Config
 from flask import Flask
 from flask import jsonify
 from flask import request
+from pydantic import ValidationError
+
+from .config import Config
+from .model import RegistrationPayload
+from .model import RegistrationResultPayload
+from .model import ReleasePayload
+from .model import ReleaseResultPayload
+from .model import ResultId
 
 app = Flask(__name__)
 
@@ -85,42 +92,39 @@ def registration_call() -> dict:
     Returns:
         dict: A dictionary containing the result of the registration request.
     """
-    received_data = request.json
-    if not received_data or not all(key in received_data for key in ["api", "request_id"]):
-        return jsonify({"error": "Invalid request data"}), 400
-    if received_data["api"] != "Registration":
-        return jsonify({
-            "api": "RegistrationResult",
-            "result": 3,
-            "request_id": received_data["request_id"],
-            "timestamp": current_timestamp()})
-
+    try:
+        request_data = RegistrationPayload(**request.json)
+    except ValidationError:
+        error_response = RegistrationResultPayload(
+            result=ResultId.OTHERS,
+            max_expiration_time=0,
+            expiration_time=0,
+            request_id=request.json.get("request_id", ""),
+            timestamp=current_timestamp())
+        return jsonify(error_response.model_dump()), 400
+    return_data = RegistrationResultPayload(
+        result=ResultId.SUCCESS,
+        max_expiration_time=0,
+        expiration_time=0,
+        request_id=request_data.request_id,
+        timestamp=current_timestamp())
     try:
         with connect_db() as conn:
             c = conn.cursor()
             c.execute(
                 'SELECT * FROM resource_operator WHERE building_id = ? AND resource_id = ?',
-                (received_data["bldg_id"], received_data["resource_id"]))
+                (request_data.bldg_id, request_data.resource_id))
             row = c.fetchone()
             if row and row[3]:
-                return_data = {
-                    "api": "RegistrationResult",
-                    "result": 2,
-                    "request_id": received_data["request_id"],
-                    "timestamp": current_timestamp()}
+                return_data.result = ResultId.FAILURE
             else:
                 c.execute('UPDATE resource_operator SET robot_id = ? WHERE building_id = ? AND resource_id = ?',
-                          (received_data["robot_id"], received_data["bldg_id"], received_data["resource_id"]))
-                return_data = {
-                    "api": "RegistrationResult",
-                    "result": 1,
-                    "request_id": received_data["request_id"],
-                    "timestamp": current_timestamp()}
+                          (request_data.robot_id, request_data.bldg_id, request_data.resource_id))
                 conn.commit()
-    except sqlite3.Error as e:
-        return jsonify({"error": str(e)}), 500
-
-    return jsonify(return_data)
+    except sqlite3.Error as err:
+        print('SQLite error: %s' % (' '.join(err.args)))
+        return_data.result = ResultId.OTHERS
+    return jsonify(return_data.model_dump())
 
 
 @app.route('/api/release', methods=['POST'])
@@ -130,51 +134,42 @@ def release_call() -> dict:
     Returns:
         dict: A dictionary containing the result of the release request.
     """
-    received_data = request.json
-
-    if not received_data or not all(key in received_data for key in ["api", "request_id"]):
-        return jsonify({"error": "Invalid request data"}), 400
-
-    if received_data["api"] != "Release":
-        return jsonify({
-            "api": "ReleaseResult",
-            "result": 3,
-            "resource_id": received_data.get("resource_id", ""),
-            "request_id": received_data["request_id"],
-            "timestamp": current_timestamp()})
+    try:
+        received_data = ReleasePayload(**request.json)
+    except ValidationError:
+        error_response = ReleaseResultPayload(
+            result=ResultId.OTHERS,
+            resource_id=request.json.get("resource_id", ""),
+            request_id=request.json.get("request_id", ""),
+            timestamp=current_timestamp())
+        return jsonify(error_response.model_dump()), 400
+    return_data = ReleaseResultPayload(
+        result=ResultId.SUCCESS,
+        resource_id=received_data.resource_id,
+        request_id=received_data.request_id,
+        timestamp=current_timestamp())
     try:
         with connect_db() as conn:
             c = conn.cursor()
-            c.execute('SELECT * FROM resource_operator WHERE building_id = ? AND resource_id = ?',
-                      (received_data["bldg_id"], received_data["resource_id"]))
+            c.execute(
+                'SELECT * FROM resource_operator WHERE building_id = ? AND resource_id = ?',
+                (received_data.bldg_id, received_data.resource_id))
             row = c.fetchone()
-
-            if row and received_data["robot_id"] == row[3]:
+            if row and received_data.robot_id == row[3]:
                 # Update the resource to release the robot
                 c.execute('''
                     UPDATE resource_operator
                     SET robot_id = ?
                     WHERE building_id = ? AND resource_id = ?
-                ''', ("", received_data["bldg_id"], received_data["resource_id"]))
+                ''', ("", received_data.bldg_id, received_data.resource_id))
 
                 conn.commit()
-
-                return_data = {
-                    "api": "ReleaseResult",
-                    "result": 1,
-                    "resource_id": received_data["resource_id"],
-                    "request_id": received_data["request_id"],
-                    "timestamp": current_timestamp()}
             else:
-                return_data = {
-                    "api": "ReleaseResult",
-                    "result": 2,
-                    "resource_id": received_data["resource_id"],
-                    "request_id": received_data["request_id"],
-                    "timestamp": current_timestamp()}
-    except sqlite3.Error as e:
-        return jsonify({"error": str(e)}), 500
-    return jsonify(return_data)
+                return_data.result = ResultId.FAILURE
+    except sqlite3.Error as err:
+        print('SQLite error: %s' % (' '.join(err.args)))
+        return_data.result = ResultId.OTHERS
+    return jsonify(return_data.model_dump())
 
 
 if __name__ == "__main__":
