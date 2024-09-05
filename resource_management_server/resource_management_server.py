@@ -125,7 +125,7 @@ def registration_call() -> Response:
                 'SELECT * FROM resource_operator WHERE bldg_id = ? AND resource_id = ?',
                 (request_data.bldg_id, request_data.resource_id))
             row = c.fetchone()
-            if row and row[6]:
+            if not row or row[6]:
                 return_data.result = ResultId.FAILURE
             else:
                 c.execute(
