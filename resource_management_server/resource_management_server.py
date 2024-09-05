@@ -97,7 +97,8 @@ def registration_call() -> Response:
     """
     try:
         request_data = RegistrationPayload(**request.json)
-    except ValidationError:
+    except ValidationError as err:
+        print(f'Validation error:\n{err}')
         error_response = RegistrationResultPayload(
             result=ResultId.OTHERS,
             max_expiration_time=0,
@@ -125,7 +126,7 @@ def registration_call() -> Response:
                           (request_data.robot_id, request_data.bldg_id, request_data.resource_id))
                 conn.commit()
     except sqlite3.Error as err:
-        print('SQLite error: %s' % (' '.join(err.args)))
+        print(f'SQLite error:\n{err}')
         return_data.result = ResultId.OTHERS
     return jsonify(return_data.model_dump())
 
@@ -139,7 +140,8 @@ def release_call() -> Response:
     """
     try:
         received_data = ReleasePayload(**request.json)
-    except ValidationError:
+    except ValidationError as err:
+        print(f'Validation error:\n{err}')
         error_response = ReleaseResultPayload(
             result=ResultId.OTHERS,
             resource_id=request.json.get("resource_id", ""),
@@ -170,7 +172,7 @@ def release_call() -> Response:
             else:
                 return_data.result = ResultId.FAILURE
     except sqlite3.Error as err:
-        print('SQLite error: %s' % (' '.join(err.args)))
+        print(f'SQLite error:\n{err}')
         return_data.result = ResultId.OTHERS
     return jsonify(return_data.model_dump())
 
