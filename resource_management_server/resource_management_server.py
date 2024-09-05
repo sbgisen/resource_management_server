@@ -31,7 +31,13 @@ from .model import RegistrationPayload
 from .model import RegistrationResultPayload
 from .model import ReleasePayload
 from .model import ReleaseResultPayload
+from .model import RequestResourceStatusPayload
+from .model import ResourceState
+from .model import ResourceStatusPayload
 from .model import ResultId
+from .model import RobotState
+from .model import RobotStatusPayload
+from .model import RobotStatusResultPayload
 
 app = Flask(__name__)
 
@@ -171,6 +177,98 @@ def release_call() -> Response:
                 conn.commit()
             else:
                 return_data.result = ResultId.FAILURE
+    except sqlite3.Error as err:
+        print(f'SQLite error:\n{err}')
+        return_data.result = ResultId.OTHERS
+    return jsonify(return_data.model_dump())
+
+
+@app.route('/api/request_resource_status', methods=['POST'])
+def request_resource_status() -> Response:
+    """Request the status of a resource.
+
+    Returns:
+        Response: JSON response containing the status of the requested resource.
+    """
+    try:
+        received_data = RequestResourceStatusPayload(**request.json)
+    except ValidationError as err:
+        error_response = ResourceStatusPayload(
+            result=ResultId.OTHERS,
+            resource_id=request.json.get("resource_id", ""),
+            resource_state=ResourceState.UNKNOWN,
+            request_id=request.json.get("request_id", ""),
+            timestamp=current_timestamp())
+        print(f'Validation error:\n{err}')
+        return jsonify(error_response.model_dump()), 400
+    return_data = ResourceStatusPayload(
+        result=ResultId.SUCCESS,
+        robot_id="",
+        max_expiration_time=0,
+        expiration_time=0,
+        resource_id=received_data.resource_id,
+        resource_state=ResourceState.UNKNOWN,
+        request_id=received_data.request_id,
+        timestamp=current_timestamp())
+    try:
+        with connect_db() as conn:
+            c = conn.cursor()
+            c.execute(
+                'SELECT * FROM resource_operator WHERE building_id = ? AND resource_id = ?',
+                (received_data.bldg_id, received_data.resource_id))
+            row = c.fetchone()
+            if row:
+                return_data.resource_state = ResourceState.OCCUPIED if row[3] else ResourceState.AVAILABLE
+                return_data.robot_id = row[3]  # Should be empty string when unoccupied.
+            else:
+                return_data.result = ResultId.FAILURE
+    except sqlite3.Error as err:
+        print(f'SQLite error:\n{err}')
+        return_data.result = ResultId.OTHERS
+    return jsonify(return_data.model_dump())
+
+
+@app.route('/api/robot_status', methods=['POST'])
+def robot_status() -> Response:
+    """Update the status of a robot.
+
+    Returns:
+        Response: JSON response containing the result of the robot status update.
+    """
+    try:
+        received_data = RobotStatusPayload(**request.json)
+    except ValidationError as err:
+        error_response = RobotStatusResultPayload(
+            result=ResultId.OTHERS,
+            request_id=request.json.get("request_id", ""),
+            timestamp=current_timestamp())
+        print(f'Validation error:\n{err}')
+        return jsonify(error_response.model_dump()), 400
+    return_data = RobotStatusResultPayload(
+        result=ResultId.SUCCESS,
+        request_id=received_data.request_id,
+        timestamp=current_timestamp())
+    # TODO
+    try:
+        with connect_db() as conn:
+            if received_data.state == RobotState.CANCEL:
+                print("Robot has canceled the request.")
+                # Find the resource the robot is using and release it.
+                c = conn.cursor()
+                c.execute(
+                    'SELECT * FROM resource_operator WHERE robot_id = ?',
+                    (received_data.robot_id,))
+                row = c.fetchone()
+                if row:
+                    c.execute('''
+                        UPDATE resource_operator
+                        SET robot_id = ?
+                        WHERE building_id = ? AND resource_id = ?
+                    ''', ("", row[1], row[2]))
+                    conn.commit()
+                else:
+                    return_data.result = ResultId.FAILURE
+            # TODO: Manage other states?
     except sqlite3.Error as err:
         print(f'SQLite error:\n{err}')
         return_data.result = ResultId.OTHERS
