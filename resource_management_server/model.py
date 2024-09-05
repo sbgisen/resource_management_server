@@ -35,6 +35,7 @@ class ResourceState(IntEnum):
     """IntEnum class for the resource_state field in the response data."""
     AVAILABLE = 0
     OCCUPIED = 1
+    UNKNOWN = 99
 
 
 class RobotState(IntEnum):
@@ -99,9 +100,9 @@ class ResourceStatusPayload(BaseModel):
     """Response data for the resource status API."""
     api: str = "ResourceStatus"
     result: ResultId
-    robot_id: str
-    max_expiration_time: int
-    expiration_time: int
+    robot_id: str | None = None
+    max_expiration_time: int | None = None
+    expiration_time: int | None = None
     resource_id: str
     resource_state: ResourceState
     request_id: str = ''
