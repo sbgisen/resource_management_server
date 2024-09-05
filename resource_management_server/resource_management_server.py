@@ -90,7 +90,7 @@ def get_all_data() -> Response:
             rows = c.fetchall()
     except sqlite3.Error as e:
         return jsonify({"error": str(e)}), 500
-    data = [{"building_id": row[1], "resource_id": row[2], "robot_id": row[3]} for row in rows]
+    data = [{"bldg_id": row[1], "resource_id": row[2], "robot_id": row[3]} for row in rows]
     return jsonify(data)
 
 
@@ -122,13 +122,13 @@ def registration_call() -> Response:
         with connect_db() as conn:
             c = conn.cursor()
             c.execute(
-                'SELECT * FROM resource_operator WHERE building_id = ? AND resource_id = ?',
+                'SELECT * FROM resource_operator WHERE bldg_id = ? AND resource_id = ?',
                 (request_data.bldg_id, request_data.resource_id))
             row = c.fetchone()
             if row and row[3]:
                 return_data.result = ResultId.FAILURE
             else:
-                c.execute('UPDATE resource_operator SET robot_id = ? WHERE building_id = ? AND resource_id = ?',
+                c.execute('UPDATE resource_operator SET robot_id = ? WHERE bldg_id = ? AND resource_id = ?',
                           (request_data.robot_id, request_data.bldg_id, request_data.resource_id))
                 conn.commit()
     except sqlite3.Error as err:
@@ -163,7 +163,7 @@ def release_call() -> Response:
         with connect_db() as conn:
             c = conn.cursor()
             c.execute(
-                'SELECT * FROM resource_operator WHERE building_id = ? AND resource_id = ?',
+                'SELECT * FROM resource_operator WHERE bldg_id = ? AND resource_id = ?',
                 (received_data.bldg_id, received_data.resource_id))
             row = c.fetchone()
             if row and received_data.robot_id == row[3]:
@@ -171,7 +171,7 @@ def release_call() -> Response:
                 c.execute('''
                     UPDATE resource_operator
                     SET robot_id = ?
-                    WHERE building_id = ? AND resource_id = ?
+                    WHERE bldg_id = ? AND resource_id = ?
                 ''', ("", received_data.bldg_id, received_data.resource_id))
 
                 conn.commit()
@@ -214,7 +214,7 @@ def request_resource_status() -> Response:
         with connect_db() as conn:
             c = conn.cursor()
             c.execute(
-                'SELECT * FROM resource_operator WHERE building_id = ? AND resource_id = ?',
+                'SELECT * FROM resource_operator WHERE bldg_id = ? AND resource_id = ?',
                 (received_data.bldg_id, received_data.resource_id))
             row = c.fetchone()
             if row:
@@ -263,7 +263,7 @@ def robot_status() -> Response:
                     c.execute('''
                         UPDATE resource_operator
                         SET robot_id = ?
-                        WHERE building_id = ? AND resource_id = ?
+                        WHERE bldg_id = ? AND resource_id = ?
                     ''', ("", row[1], row[2]))
                     conn.commit()
                 else:
