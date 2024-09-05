@@ -35,7 +35,7 @@ class ResourceData(BaseModel):
     resource_type: ResourceType
     max_timeout: int
     default_timeout: int
-    robot_id: str = ""  # TODO: Change this to locked_by
+    locked_by: str = ''
     locked_time: int = 0
 
     @validator('max_timeout', 'default_timeout')

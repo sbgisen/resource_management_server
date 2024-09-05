@@ -67,11 +67,11 @@ def initialize() -> None:
         c = conn.cursor()
         update_query = '''
         UPDATE resource_operator
-        SET robot_id = '';
+        SET locked_by = '';
         '''
         c.execute(update_query)
         conn.commit()
-        print("All robot_id values have been set to an empty string.")
+        print("All locked_by values have been set to an empty string.")
 
 
 @app.route('/api/all_data', methods=['GET'])
@@ -90,7 +90,7 @@ def get_all_data() -> Response:
             rows = c.fetchall()
     except sqlite3.Error as e:
         return jsonify({"error": str(e)}), 500
-    data = [{"bldg_id": row[1], "resource_id": row[2], "robot_id": row[3]} for row in rows]
+    data = [{"bldg_id": row[1], "resource_id": row[2], "locked_by": row[6]} for row in rows]
     return jsonify(data)
 
 
@@ -125,11 +125,12 @@ def registration_call() -> Response:
                 'SELECT * FROM resource_operator WHERE bldg_id = ? AND resource_id = ?',
                 (request_data.bldg_id, request_data.resource_id))
             row = c.fetchone()
-            if row and row[3]:
+            if row and row[6]:
                 return_data.result = ResultId.FAILURE
             else:
-                c.execute('UPDATE resource_operator SET robot_id = ? WHERE bldg_id = ? AND resource_id = ?',
-                          (request_data.robot_id, request_data.bldg_id, request_data.resource_id))
+                c.execute(
+                    'UPDATE resource_operator SET locked_by = ? WHERE bldg_id = ? AND resource_id = ?',
+                    (request_data.robot_id, request_data.bldg_id, request_data.resource_id))
                 conn.commit()
     except sqlite3.Error as err:
         print(f'SQLite error:\n{err}')
@@ -166,11 +167,11 @@ def release_call() -> Response:
                 'SELECT * FROM resource_operator WHERE bldg_id = ? AND resource_id = ?',
                 (received_data.bldg_id, received_data.resource_id))
             row = c.fetchone()
-            if row and received_data.robot_id == row[3]:
+            if row and received_data.robot_id == row[6]:
                 # Update the resource to release the robot
                 c.execute('''
                     UPDATE resource_operator
-                    SET robot_id = ?
+                    SET locked_by = ?
                     WHERE bldg_id = ? AND resource_id = ?
                 ''', ("", received_data.bldg_id, received_data.resource_id))
 
@@ -218,8 +219,8 @@ def request_resource_status() -> Response:
                 (received_data.bldg_id, received_data.resource_id))
             row = c.fetchone()
             if row:
-                return_data.resource_state = ResourceState.OCCUPIED if row[3] else ResourceState.AVAILABLE
-                return_data.robot_id = row[3]  # Should be empty string when unoccupied.
+                return_data.resource_state = ResourceState.OCCUPIED if row[6] else ResourceState.AVAILABLE
+                return_data.robot_id = row[6]  # Should be empty string when unoccupied.
             else:
                 return_data.result = ResultId.FAILURE
     except sqlite3.Error as err:
@@ -256,13 +257,13 @@ def robot_status() -> Response:
                 # Find the resource the robot is using and release it.
                 c = conn.cursor()
                 c.execute(
-                    'SELECT * FROM resource_operator WHERE robot_id = ?',
+                    'SELECT * FROM resource_operator WHERE locked_by = ?',
                     (received_data.robot_id,))
                 row = c.fetchone()
                 if row:
                     c.execute('''
                         UPDATE resource_operator
-                        SET robot_id = ?
+                        SET locked_by = ?
                         WHERE bldg_id = ? AND resource_id = ?
                     ''', ("", row[1], row[2]))
                     conn.commit()

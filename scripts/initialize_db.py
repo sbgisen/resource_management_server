@@ -38,10 +38,10 @@ def create_table(c: sqlite3.Cursor) -> None:
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         bldg_id TEXT NOT NULL,
         resource_id TEXT NOT NULL UNIQUE,
-        robot_id TEXT NOT NULL,
         resource_type INTEGER,
         max_timeout INTEGER,
         default_timeout INTEGER,
+        locked_by TEXT NOT NULL,
         locked_time INTEGER,
         UNIQUE(resource_id) ON CONFLICT IGNORE
     )
@@ -80,8 +80,9 @@ def insert_resources(c: sqlite3.Cursor, resources: list[ResourceData]) -> None:
     for resource in resources:
         c.execute(
             '''
-            INSERT INTO resource_operator (bldg_id, resource_id, robot_id, resource_type, max_timeout, default_timeout)
-            VALUES (?, ?, '', ?, ?, ?)
+            INSERT INTO resource_operator\
+                  (bldg_id, resource_id, resource_type, max_timeout, default_timeout, locked_by)
+            VALUES (?, ?, ?, ?, ?, '')
             ON CONFLICT(resource_id) DO NOTHING
             ''', (
                 resource.bldg_id, resource.resource_id, resource.resource_type.value,
