@@ -69,11 +69,11 @@ def initialize() -> None:
         c = conn.cursor()
         update_query = '''
         UPDATE resource_operator
-        SET locked_by = '';
+        SET locked_by = '', locked_time = 0
         '''
         c.execute(update_query)
         conn.commit()
-        print("All locked_by values have been set to an empty string.")
+        print('Database Value Reset')
 
 
 @app.route('/api/all_data', methods=['GET'])
@@ -92,8 +92,9 @@ def get_all_data() -> Response:
             rows = c.fetchall()
     except sqlite3.Error as err:
         return jsonify({'error': str(err)}), 500
-    data = [
-        {'bldg_id': row['bldg_id'], 'resource_id': row['resource_id'], 'locked_by': row['locked_by']} for row in rows]
+    data = [{
+        'bldg_id': row['bldg_id'], 'resource_id': row['resource_id'],
+        'locked_by': row['locked_by'], 'locked_time': row['locked_time']} for row in rows]
     return jsonify(data)
 
 
@@ -132,8 +133,9 @@ def registration_call() -> Response:
                 return_data.result = ResultId.FAILURE
             else:
                 c.execute(
-                    'UPDATE resource_operator SET locked_by = ? WHERE bldg_id = ? AND resource_id = ?',
-                    (request_data.robot_id, request_data.bldg_id, request_data.resource_id))
+                    'UPDATE resource_operator SET locked_by = ?, locked_time = ? \
+                        WHERE bldg_id = ? AND resource_id = ?',
+                    (request_data.robot_id, request_data.timestamp, request_data.bldg_id, request_data.resource_id))
                 conn.commit()
     except sqlite3.Error as err:
         print(f'SQLite error:\n{err}')
