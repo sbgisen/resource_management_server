@@ -17,6 +17,8 @@ cd scripts
 ./initialize_db.py /path/to/resource_config.yaml # Initialize the database, database will be located at ~/.resource_management_server dir.
 ```
 
+Run the `initialize_db.py` script each time you update the resource configuration file.
+
 ## Quick Test
 
 ### Launch Server
