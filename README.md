@@ -2,6 +2,10 @@
 
 Python package for launching a Flask-based server for running the "Resource Management Server" endpoint compliant with RFA Standards.
 
+## Prepare resource configuration
+
+See [sample_resource_config.yaml](config/sample_resource_config.yaml) and create your own file containing a list of resource configuration you want to manage.
+
 ## Install
 
 ```bash
@@ -10,7 +14,7 @@ git clone https://github.com/sbgisen/resource_management_server.git
 cd resource_management_server
 pip install .
 cd scripts
-./initialize_db.py  # Initialize the database, database will be located at ~/.resource_management_server dir.
+./initialize_db.py /path/to/resource_config.yaml # Initialize the database, database will be located at ~/.resource_management_server dir.
 ```
 
 ## Quick Test
