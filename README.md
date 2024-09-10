@@ -44,7 +44,7 @@ curl -X GET http://127.0.0.1:5000/api/all_data
 Example Response:
 
 ```json
-[{"bldg_id":"Takeshiba","locked_by":"","locked_time":0,"resource_id":"27F_R01"},{"bldg_id":"Takeshiba","locked_by":"","locked_time":0,"resource_id":"27F_R02"}]
+[{"bldg_id":"Takeshiba","default_timeout":90000,"expiration_time":0,"locked_by":"","locked_time":0,"max_timeout":90000,"resource_id":"27F_R01","resource_type":1},{"bldg_id":"Takeshiba","default_timeout":180000,"expiration_time":0,"locked_by":"","locked_time":0,"max_timeout":180000,"resource_id":"27F_R02","resource_type":1}]
 ```
 
 ### Request Resource Registration

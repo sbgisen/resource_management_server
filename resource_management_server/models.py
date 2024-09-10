@@ -37,6 +37,7 @@ class ResourceData(BaseModel):
     default_timeout: int
     locked_by: str = ''
     locked_time: int = 0
+    expiration_time: int = 0
 
     @validator('max_timeout', 'default_timeout')
     def validate_timeouts(cls, value: int) -> int:

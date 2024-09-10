@@ -33,6 +33,7 @@ from .models import RegistrationResultPayload
 from .models import ReleasePayload
 from .models import ReleaseResultPayload
 from .models import RequestResourceStatusPayload
+from .models import ResourceData
 from .models import ResourceState
 from .models import ResourceStatusPayload
 from .models import ResultId
@@ -58,10 +59,11 @@ def register_routes(app: Flask) -> None:
                 rows = c.fetchall()
         except sqlite3.Error as err:
             return jsonify({'error': str(err)}), 500
-        data = [{
-            'bldg_id': row['bldg_id'], 'resource_id': row['resource_id'],
-            'locked_by': row['locked_by'], 'locked_time': row['locked_time']} for row in rows]
-        return jsonify(data)
+        try:
+            data = [ResourceData(**row) for row in rows]
+            return jsonify([item.dict() for item in data])
+        except ValidationError as err:
+            return jsonify({'error': f'Data validation error: {str(err)}'}), 500
 
     @app.route('/api/registration', methods=['POST'])
     def registration_call() -> Response:
