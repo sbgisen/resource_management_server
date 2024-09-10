@@ -225,6 +225,9 @@ def request_resource_status() -> Response:
             if row:
                 return_data.resource_state = ResourceState.OCCUPIED if row['locked_by'] else ResourceState.AVAILABLE
                 return_data.robot_id = row['locked_by']  # Should be empty string when unoccupied.
+                if row['locked_by']:
+                    return_data.expiration_time = row['locked_time'] + row['default_timeout']
+                    return_data.max_expiration_time = row['locked_time'] + row['max_timeout']
             else:
                 return_data.result = ResultId.FAILURE
     except sqlite3.Error as err:
