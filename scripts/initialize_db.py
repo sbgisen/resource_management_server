@@ -86,7 +86,7 @@ def insert_resources(c: sqlite3.Cursor, resources: list[ResourceData]) -> None:
             ON CONFLICT(resource_id) DO NOTHING
             ''', (
                 resource.bldg_id, resource.resource_id, resource.resource_type.value,
-                resource.max_timeout, resource.default_timeout))
+                resource.max_timeout * 1000, resource.default_timeout * 1000))  # Convert to milliseconds
 
 
 def main(yaml_path: str) -> None:
