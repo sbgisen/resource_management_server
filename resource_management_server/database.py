@@ -46,6 +46,7 @@ def create_table(c: sqlite3.Cursor) -> None:
         default_timeout INTEGER,
         locked_by TEXT NOT NULL,
         locked_time INTEGER,
+        expiration_time INTEGER,
         UNIQUE(resource_id) ON CONFLICT IGNORE
     )
     ''')
@@ -84,8 +85,9 @@ def insert_resources(c: sqlite3.Cursor, resources: list[ResourceData]) -> None:
         c.execute(
             '''
             INSERT INTO resource_operator\
-                (bldg_id, resource_id, resource_type, max_timeout, default_timeout, locked_by, locked_time)
-            VALUES (?, ?, ?, ?, ?, '', 0)
+                (bldg_id, resource_id, resource_type, max_timeout, default_timeout,
+                locked_by, locked_time, expiration_time)\
+            VALUES (?, ?, ?, ?, ?, '', 0, 0)
             ON CONFLICT(resource_id) DO NOTHING
             ''', (
                 resource.bldg_id, resource.resource_id, resource.resource_type.value,
@@ -129,6 +131,43 @@ def current_timestamp() -> int:
         int: The current timestamp in the specified format.
     """
     return int(time.time() * 1000)
+
+
+def get_max_expiration_time(locked_time: int, max_timeout: int) -> int:
+    """Calculate the max expiration time for a resource.
+
+    Args:
+        locked_time (int): The time the resource was locked.
+        max_timeout (int): The max timeout for the resource.
+
+    Returns:
+        int: The max expiration time (millisecs) for the resource.
+    """
+    return locked_time + max_timeout
+
+
+def get_expiration_time(
+        locked_time: int, default_timeout: int, max_timeout: int, requested_timeout: int) -> int | None:
+    """Calculate the expiration time for a resource.
+
+    Args:
+        locked_time (int): The time the resource was locked.
+        default_timeout (int): The default timeout for the resource.
+        max_timeout (int): The max timeout for the resource.
+        requested_timeout (int): The timeout requested from the client.
+
+    Returns:
+        int | None: The expiration time (millisecs) for the resource.
+            None when the given timeout exceeds the max timeout or the current time exceeds the expiration time.
+    """
+    if requested_timeout == 0:
+        requested_timeout = default_timeout
+    if max_timeout < requested_timeout:
+        return None
+    expiration_time = locked_time + requested_timeout
+    if current_timestamp() > expiration_time:
+        return None
+    return expiration_time
 
 
 def check_for_timeout() -> None:

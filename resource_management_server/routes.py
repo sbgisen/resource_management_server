@@ -26,6 +26,8 @@ from pydantic import ValidationError
 
 from .database import connect_db
 from .database import current_timestamp
+from .database import get_expiration_time
+from .database import get_max_expiration_time
 from .models import RegistrationPayload
 from .models import RegistrationResultPayload
 from .models import ReleasePayload
@@ -95,12 +97,22 @@ def register_routes(app: Flask) -> None:
                 if not row or row['locked_by']:
                     return_data.result = ResultId.FAILURE
                 else:
-                    c.execute('''
-                        UPDATE resource_operator SET locked_by = ?, locked_time = ? \
-                              WHERE bldg_id = ? AND resource_id = ?
-                    ''', (
-                        request_data.robot_id, request_data.timestamp, request_data.bldg_id, request_data.resource_id))
-                    conn.commit()
+                    expiration_time = get_expiration_time(
+                        request_data.timestamp, row['default_timeout'], row['max_timeout'], request_data.timeout)
+                    if not expiration_time:
+                        print('Requested timeout or timestamp is invalid.')
+                        return_data.result = ResultId.OTHERS
+                    else:
+                        c.execute('''
+                            UPDATE resource_operator SET locked_by = ?, locked_time = ?, expiration_time = ?\
+                                WHERE bldg_id = ? AND resource_id = ?
+                        ''', (
+                            request_data.robot_id, request_data.timestamp, expiration_time,
+                            request_data.bldg_id, request_data.resource_id))
+                        return_data.max_expiration_time = get_max_expiration_time(
+                            request_data.timestamp, row['max_timeout'])
+                        return_data.expiration_time = expiration_time
+                        conn.commit()
         except sqlite3.Error as err:
             print(f'SQLite error:\n{err}')
             return_data.result = ResultId.OTHERS
@@ -190,8 +202,9 @@ def register_routes(app: Flask) -> None:
                         ResourceState.OCCUPIED if row['locked_by'] else ResourceState.AVAILABLE
                     return_data.robot_id = row['locked_by']  # Should be empty string when unoccupied.
                     if row['locked_by']:
-                        return_data.expiration_time = row['locked_time'] + row['default_timeout']
-                        return_data.max_expiration_time = row['locked_time'] + row['max_timeout']
+                        return_data.expiration_time = row['expiration_time']
+                        return_data.max_expiration_time = get_max_expiration_time(
+                            row['locked_time'], row['max_timeout'])
                 else:
                     return_data.result = ResultId.FAILURE
         except sqlite3.Error as err:
