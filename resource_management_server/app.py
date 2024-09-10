@@ -14,25 +14,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Create a Flask application for the resource management server."""
+"""Execution script for Resource Management Server."""
 
-from flask import Flask
+from resource_management_server import create_app
 
-from .database import initialize_db
-from .database import start_timeout_check
-from .routes import register_routes
+app = create_app()
 
 
-def create_app() -> Flask:
-    """Create a Flask application.
-
-    Returns:
-        Flask: The created Flask application.
-    """
-    app = Flask(__name__)
-    print('Initializing database...')
-    initialize_db()
-    print('Database initialized.')
-    register_routes(app)
-    start_timeout_check()
-    return app
+if __name__ == "__main__":
+    app.run(debug=True)

@@ -14,16 +14,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Script used for initializing the resource management database and create a table."""
+"""Functions for handling the resource management server database."""
 
+import os
 import sqlite3
 import sys
+import threading
+import time
 
 import yaml
 from pydantic import ValidationError
 
-from resource_management_server.config import Config
-from resource_management_server.model import ResourceData
+from .config import Config
+from .models import ResourceData
 
 
 def create_table(c: sqlite3.Cursor) -> None:
@@ -89,28 +92,74 @@ def insert_resources(c: sqlite3.Cursor, resources: list[ResourceData]) -> None:
                 resource.max_timeout * 1000, resource.default_timeout * 1000))  # Convert to milliseconds
 
 
-def main(yaml_path: str) -> None:
-    """Main function to initialize the database and create a table.
+def connect_db() -> sqlite3.Connection:
+    """Connect to the SQLite database.
 
-    Args:
-        yaml_path (str): Path to the yaml file.
+    Returns:
+        sqlite3.Connection: Connection object to the SQLite database.
     """
     conn = sqlite3.connect(Config.RESOURCE_DB_PATH)
-    c = conn.cursor()
-    create_table(c)
-    resources = load_resources_from_yaml(yaml_path)
-    if not resources:
-        print('Failed to load resources from YAML.')
-        conn.close()
-        sys.exit(1)
-    insert_resources(c, resources)
-    conn.commit()
-    conn.close()
-    print('Database and table created successfully with data from YAML.')
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
-if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print("Usage: python initialize_db.py <path_to_resource_config_yaml>")
+def initialize_db() -> None:
+    """Initialize the database and create a table using the given YAML config."""
+    yaml_path = os.environ.get('RESOURCE_YAML_PATH')
+    if not yaml_path:
+        print('RESOURCE_YAML_PATH environment variable is not set.')
         sys.exit(1)
-    main(sys.argv[1])
+    with connect_db() as conn:
+        c = conn.cursor()
+        create_table(c)
+        resources = load_resources_from_yaml(yaml_path)
+        if not resources:
+            print('Failed to load resources from YAML.')
+            conn.close()
+            sys.exit(1)
+        insert_resources(c, resources)
+        conn.commit()
+        print(f'Database and table created successfully with data from {yaml_path}.')
+
+
+def current_timestamp() -> int:
+    """Get the current timestamp.
+
+    Returns:
+        int: The current timestamp in the specified format.
+    """
+    return int(time.time() * 1000)
+
+
+def check_for_timeout() -> None:
+    """Periodically checks for resources that have exceeded their max timeout and releases them."""
+    while True:
+        current_time = current_timestamp()
+        try:
+            with connect_db() as conn:
+                c = conn.cursor()
+                # Select all resources where the locked time exceeds the max timeout.
+                c.execute('''
+                    SELECT * FROM resource_operator
+                    WHERE locked_by != "" AND locked_time + max_timeout < ?
+                ''', (current_time,))
+                rows = c.fetchall()
+
+                for row in rows:
+                    # Release resources that have exceeded the max timeout
+                    c.execute('''
+                        UPDATE resource_operator
+                        SET locked_by = ""
+                        WHERE bldg_id = ? AND resource_id = ?
+                    ''', (row['bldg_id'], row['resource_id']))
+                    conn.commit()
+                    print(f"Released resource {row['resource_id']} in building {row['bldg_id']} due to timeout.")
+        except sqlite3.Error as err:
+            print(f"SQLite error during timeout check: {err}")
+        time.sleep(1)
+
+
+def start_timeout_check() -> None:
+    """Start the timeout check thread."""
+    timeout_thread = threading.Thread(target=check_for_timeout, daemon=True)
+    timeout_thread.start()

@@ -1,6 +1,10 @@
 # resource_management_server
 
-Python package for launching a Flask-based server for running the "Resource Management Server" endpoint compliant with RFA Standards.
+Python package for launching a Flask-based server for running the "Resource Management Server" endpoint compliant with [RFA](https://robot-friendly.org/) Standards.
+
+>[!Note]
+Not all functionalities are implemented yet. This is a work in progress.
+e.g. `max_timeout` and `default_timeout` are not handled as is expected in the RFA Standards.
 
 ## Prepare resource configuration
 
@@ -14,10 +18,7 @@ git clone https://github.com/sbgisen/resource_management_server.git
 cd resource_management_server
 pip install .
 cd scripts
-./initialize_db.py /path/to/resource_config.yaml # Initialize the database, database will be located at ~/.resource_management_server dir.
 ```
-
-Run the `initialize_db.py` script each time you update the resource configuration file.
 
 ## Quick Test
 
@@ -27,11 +28,11 @@ Launch the Resource Management Server as follows.
 
 ```bash
 cd ~/workspace/resource_management_server/resource_management_server
-export FLASK_APP=resource_management_server
+export RESOURCE_YAML_PATH=/path/to/resource_config.yaml
 flask run --host=0.0.0.0 --port=5000
 ```
 
-### Get All Resources
+### Get All Resource Information
 
 (Not defined in RFA Standards, but for debug purposes.)
 
