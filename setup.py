@@ -26,7 +26,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        "Flask",
+        "Flask>=3.0",
         "pysqlite3"
     ],
 )

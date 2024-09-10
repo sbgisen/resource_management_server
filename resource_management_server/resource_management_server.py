@@ -62,7 +62,6 @@ def current_timestamp() -> int:
     return int(time.time() * 1000)
 
 
-@app.before_first_request
 def initialize() -> None:
     """Reset occupation status of all resources."""
     with connect_db() as conn:
@@ -282,4 +281,5 @@ def robot_status() -> Response:
 
 
 if __name__ == "__main__":
+    initialize()
     app.run(debug=True)
