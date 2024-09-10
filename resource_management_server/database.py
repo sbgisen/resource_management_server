@@ -188,7 +188,7 @@ def check_for_timeout() -> None:
                     # Release resources that have exceeded the max timeout
                     c.execute('''
                         UPDATE resource_operator
-                        SET locked_by = ""
+                        SET locked_by = "" AND locked_time = 0 AND expiration_time = 0
                         WHERE bldg_id = ? AND resource_id = ?
                     ''', (row['bldg_id'], row['resource_id']))
                     conn.commit()
