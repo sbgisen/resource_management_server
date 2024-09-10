@@ -23,6 +23,8 @@ Run the `initialize_db.py` script each time you update the resource configuratio
 
 ### Launch Server
 
+Launch the Resource Management Server as follows.
+
 ```bash
 cd ~/workspace/resource_management_server/resource_management_server
 export FLASK_APP=resource_management_server
@@ -42,12 +44,12 @@ curl -X GET http://127.0.0.1:5000/api/all_data
 ```bash
 curl -X POST http://127.0.0.1:5000/api/registration -H "Content-Type: application/json" -d '{
   "api": "Registration",
-  "bldg_id" : "Takeshiba",
   "robot_id": "cuboid01",
+  "bldg_id" : "Takeshiba",
   "resource_id": "27F_R01",
-  "timeout" : 300,
+  "timeout" : 0,
   "request_id": "12345",
-  "timestamp": "1625140800"
+  "timestamp": 1725948482218
 }'
 ```
 
@@ -56,12 +58,12 @@ curl -X POST http://127.0.0.1:5000/api/registration -H "Content-Type: applicatio
 ```bash
 curl -X POST http://127.0.0.1:5000/api/release -H "Content-Type: application/json" -d '{
   "api": "Release",
-  "bldg_id" : "Takeshiba",
   "robot_id": "cuboid01",
+  "bldg_id" : "Takeshiba",
   "resource_id": "27F_R01",
-  "timeout" : 300,
+  "timeout" : 0,
   "request_id": "12345",
-  "timestamp": "1625140800"
+  "timestamp": 1725948482218
 }'
 ```
 
@@ -73,6 +75,21 @@ curl -X POST http://127.0.0.1:5000/api/request_resource_status -H "Content-Type:
   "bldg_id" : "Takeshiba",
   "resource_id": "27F_R01",
   "request_id": "12345",
-  "timestamp": "1625140800"
+  "timestamp": 1725948482218
+}'
+```
+
+### Send Robot Status
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/robot_status -H "Content-Type: application/json" -d '{
+  "api": "RobotStatus",
+  "robot_id": "cuboid01",
+  "bldg_id" : "Takeshiba",
+  "resource_id": "27F_R01",
+  "state": 0,
+  "state_detail": 0,
+  "request_id": "12345",
+  "timestamp": 1725948482218
 }'
 ```
