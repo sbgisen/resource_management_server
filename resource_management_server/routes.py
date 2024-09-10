@@ -95,11 +95,11 @@ def register_routes(app: Flask) -> None:
                 if not row or row['locked_by']:
                     return_data.result = ResultId.FAILURE
                 else:
-                    c.execute(
-                        'UPDATE resource_operator SET locked_by = ?, locked_time = ? \
-                        WHERE bldg_id = ? AND resource_id = ?', (
-                            request_data.robot_id, request_data.timestamp,
-                            request_data.bldg_id, request_data.resource_id))
+                    c.execute('''
+                        UPDATE resource_operator SET locked_by = ?, locked_time = ? \
+                              WHERE bldg_id = ? AND resource_id = ?
+                    ''', (
+                        request_data.robot_id, request_data.timestamp, request_data.bldg_id, request_data.resource_id))
                     conn.commit()
         except sqlite3.Error as err:
             print(f'SQLite error:\n{err}')
