@@ -1,9 +1,9 @@
 ---
 - bldg_id: Takeshiba
   resource_id: 27F_R01
-  resource_type: 1
+  resource_type: 1  # Currently only `1` is defined in RFA standards
   max_timeout: 90
-  default_timeout: 90
+  default_timeout: 90  # Must be smaller than or equal to `max_timeout`
 - bldg_id: Takeshiba
   resource_id: 27F_R02
   resource_type: 1
