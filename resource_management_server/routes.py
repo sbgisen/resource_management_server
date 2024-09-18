@@ -96,7 +96,9 @@ def register_routes(app: Flask) -> None:
                     'SELECT * FROM resource_operator WHERE bldg_id = ? AND resource_id = ?',
                     (request_data.bldg_id, request_data.resource_id))
                 row = c.fetchone()
-                if not row or row['locked_by']:
+                if row is None:
+                    return_data.result = ResultId.OTHERS
+                elif row['locked_by']:
                     return_data.result = ResultId.FAILURE
                 else:
                     expiration_time = get_expiration_time(
