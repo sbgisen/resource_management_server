@@ -188,9 +188,9 @@ def check_for_timeout() -> None:
                     # Release resources that have exceeded the max timeout
                     c.execute('''
                         UPDATE resource_operator
-                        SET locked_by = "" AND locked_time = 0 AND expiration_time = 0
+                        SET locked_by = ?, locked_time = 0, expiration_time = 0
                         WHERE bldg_id = ? AND resource_id = ?
-                    ''', (row['bldg_id'], row['resource_id']))
+                    ''', ("", row['bldg_id'], row['resource_id']))
                     conn.commit()
                     print(f"Released resource {row['resource_id']} in building {row['bldg_id']} due to timeout.")
         except sqlite3.Error as err:
