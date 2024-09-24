@@ -1,10 +1,22 @@
 # resource_management_server
 
-Python package for launching a Flask-based server for running the "Resource Management Server" endpoint compliant with [RFA](https://robot-friendly.org/) Standards.
+Python package for launching a Flask-based server for running the "Resource Management Server" endpoint compliant with [RFA (Robot Friendly Asset Promotion Association)](https://robot-friendly.org/) Standards.
 
 >[!Note]
 Not all functionalities are implemented yet. This is a work in progress.
 (e.g. `max_timeout` and `default_timeout` are not handled as is expected in the RFA Standards.)
+
+## About Resource Management Server
+
+Resource Management Server is a concept standardized by RFA, as defined in the [RFA規格(ロボット群管理インタフェイス定義 RFA B 0004 : 2024)](https://robot-friendly.org/publication/rfa%e8%a6%8f%e6%a0%bc%e3%83%ad%e3%83%9c%e3%83%83%e3%83%88%e7%be%a4%e7%ae%a1%e7%90%86%e3%82%a4%e3%83%b3%e3%82%bf%e3%83%95%e3%82%a7%e3%82%a4%e3%82%b9%e5%ae%9a%e7%be%a9-rfa-b-0004-2024/) (English version to be published in the future).
+
+The server is responsible for managing the occupation status of the "resources (places that only one or few robots can pass at a time such as narrow aisles)" inside buildings and is expected to serve as a bridge for sharing blockage information between separate robot fleets managed by separate systems (either based on Open-RMF or not).
+![Resource Management Server](.readme/bridging_fleet_systems.png)
+Each robot trying to pass through the resource is expected to "register" for the resource by accessing the server before entering it. Information about the resource is expected to be shared beforehand with all fleet system managers by the Resource Management Server operator.
+
+Such servers and agreements to use it are necessary because the robots working inside a certain building does not always belong to the same fleet management system.
+
+For further information, please follow the link above.
 
 ## Prepare resource configuration
 
